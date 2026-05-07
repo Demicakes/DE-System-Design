@@ -1,45 +1,38 @@
-# Week 1 & 2: Data Modeling & ETL Foundations
+# Week 1 : Data Modeling & ETL Pipeline Engineering
 
 ## 🎯 Project Phase Goal
-Build a localized data lake and warehouse environment to move ride-sharing data through a full lifecycle: from raw JSON events to a structured PostgreSQL database.
-
-## 🏗️ Architecture: The Medallion Pattern
-I implemented the Medallion Architecture to ensure data quality at every step:
-
-1.  **Bronze (Raw Layer):** Immutable storage. I generated raw JSON files simulating ride events. The rule here: *never touch the raw files.*
-2.  **Silver (Cleaned Layer):** Data Transformation. I used Pandas to:
-    * Flatten nested JSON structures.
-    * Enforce data types (converting strings to floats for `distance` and `fare`).
-    * Add audit columns (`processed_at`) for traceability.
-3.  **Gold (Curated Layer):** The Data Warehouse. Structured SQL tables in PostgreSQL, optimized for business logic and reporting.
+To build a scalable, local data environment using the **Medallion Architecture**, moving ride-sharing data from unstructured JSON files into a production-ready PostgreSQL Data Warehouse.
 
 
----
 
-## 🛠️ Technical Hurdles & Solutions
+## 🏗️ The System Architecture
+I implemented a three-tier pipeline to ensure data quality and auditability:
 
-### 1. The "Ghost" in the Volume (Docker Persistence)
-* **Problem:** I updated my database password in `docker-compose.yml`, but my Python script kept getting a `FATAL: password authentication failed` error.
-* **The "Aha!" Moment:** I learned that Postgres initializes its credentials only once in a Docker Volume. Changing the YAML doesn't update an existing volume.
-* **Solution:** Used `docker-compose down -v` to wipe the volume and force a fresh initialization with the new credentials.
+1.  **Bronze (Raw):** Immutable storage for incoming JSON ride events. I learned the "Golden Rule" of DE: Never modify the source data.
+2.  **Silver (Cleaned):** I used Python and Pandas to flatten nested JSON structures and enforce data types (e.g., ensuring `fare_amount` is a float). This stage also adds a `processed_at` timestamp for data lineage.
+3.  **Gold (Warehouse):** The final destination. Data is loaded into a PostgreSQL instance running in Docker, providing a structured environment for SQL-based analytics.
 
-### 2. The Port 5432 Collision
-* **Problem:** Even with the correct password, the connection was rejected.
-* **Diagnosis:** Ran `netstat -ano | findstr :5432` and discovered a local instance of Postgres (likely from a previous install) was "camping" on the port.
-* **Solution:** Implemented **Port Mapping**. I mapped the host port `5433` to the container port `5432`, creating a private lane for this project.
+## 🛠️ Technical Challenges & Solutions
 
-### 3. Data Integrity & Schema Enforcement
-* **Problem:** SQL databases are "Strongly Typed," meaning you can't put a string into a float column.
-* **Solution:** I used Pandas `.astype(float)` during the Silver transition. This ensures that the data is "Gold-ready" before it even hits the database door.
+### 1. Networking & Port Collisions
+* **Problem:** Connection to the database failed because Port `5432` was already occupied by a local Postgres service on my Windows machine.
+* **Solution:** I implemented **Port Mapping** in `docker-compose.yml`, mapping the host port `5433` to the container port `5432`. This bypassed the conflict without requiring me to uninstall local software.
 
----
+### 2. State Persistence (The "Ghost" Volume)
+* **Problem:** Updating credentials in the `docker-compose.yml` did not work because Postgres had already initialized a data volume with the old password.
+* **Solution:** I utilized `docker-compose down -v` and `docker volume prune` to clear the persistent state, forcing a fresh initialization with the correct security settings.
 
-## 🚀 Key Commands Used
-| Goal | Command |
-| :--- | :--- |
-| **Reset Environment** | `docker-compose down -v` |
-| **Check Port Usage** | `netstat -ano \| findstr :5432` |
-| **Verify SQL Data** | `docker exec -it de_journal_db psql -U engineer -d ride_share_warehouse -p 5432` |
+### 3. Repository Orchestration & Cleanup
+* **Problem:** As the project grew, the root directory became cluttered with data files and scripts.
+* **Solution:** * Reorganized logic into a `/Scripts` directory.
+    * Created a `main.py` entry point to orchestrate the entire pipeline flow.
+    * Configured `.gitignore` to prevent local data files from being committed to version control, following industry security best practices.
 
-## ✅ Result
-The pipeline successfully processes JSON files and loads them into a relational table. I can now run complex SQL queries on data that started as unstructured text.
+## 🚀 Key Skills Demonstrated
+* **Containerization:** Managing multi-service environments with Docker.
+* **Schema Enforcement:** Using Pandas to clean and validate data types before SQL ingestion.
+* **Workflow Orchestration:** Automating a multi-step ETL process into a single executable pipeline.
+* **Project Hygiene:** Organizing a repository for professional collaboration.
+
+## ✅ Final Result
+The system successfully ingests raw JSON, processes it into a clean CSV format, and loads it into a PostgreSQL table. The entire flow is now fully automated via `python main.py`.
