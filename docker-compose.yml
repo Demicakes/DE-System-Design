@@ -1,17 +1,16 @@
-version: '3.8'
-
 services:
-  # The "Warehouse" Database
-  data-warehouse:
-    image: postgres:15-alpine
+  db:
     container_name: de_journal_db
+    image: postgres:15-alpine
+    restart: always
     environment:
-      - POSTGRES_USER=engineer
-      - POSTGRES_PASSWORD=password123
-      - POSTGRES_DB=ride_share_warehouse
+      POSTGRES_USER: engineer
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: ride_share_warehouse
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      # This tells Docker: "Look in my week-1-modeling folder"
-      # "And run any .sql files you find inside the database on startup"
-      - ./week-1-modeling:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

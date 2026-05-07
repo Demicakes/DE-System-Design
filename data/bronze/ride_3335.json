@@ -1,0 +1,18 @@
+{
+    "event_id": "evt_2272007592",
+    "ride_details": {
+        "id": 3335,
+        "user": "User_9",
+        "driver_info": {
+            "name": "Driver_9",
+            "rating": 3.5503773450309284
+        },
+        "distance_miles": "12.67"
+    },
+    "locations": {
+        "pickup": "Downtown",
+        "dropoff": "Suburb"
+    },
+    "timestamp": "2026-05-07T14:21:47.941316",
+    "fare": 60.72
+}

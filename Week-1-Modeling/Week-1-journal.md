@@ -1,36 +1,45 @@
-# Engineering Journal: Week 1 - Data Modeling & System Design
+# Week 1 & 2: Data Modeling & ETL Foundations
 
-## 💡 The "Self-Directed" Pivot: Moving Beyond Legacy Instruction
-### Problem: Inefficient Curriculum (DE-Nat4 Bootcamp)
-The Generation DE-Nat4 bootcamp curriculum was delivered using a legacy approach that relied heavily on **VirtualBox** and **CentOS** to teach Linux and environment management. 
+## 🎯 Project Phase Goal
+Build a localized data lake and warehouse environment to move ride-sharing data through a full lifecycle: from raw JSON events to a structured PostgreSQL database.
 
-**The Legacy Approach (Bootcamp):**
-- Required manual installation of Virtual Machines (VirtualBox).
-- Focused on local OS management (CentOS), which often led to "Tech Support" loops (BIOS settings, RAM allocation, OS updates).
-- Resulted in an environment that was difficult to share, reproduce, or deploy to the cloud.
+## 🏗️ Architecture: The Medallion Pattern
+I implemented the Medallion Architecture to ensure data quality at every step:
 
-**The Professional Pivot (My Implementation):**
-- I recognized that the bootcamp's delivery was out of sync with 2026 industry standards.
-- I moved the entire project to **Docker and Docker Compose**.
-- **The "Why":** In a modern Data Engineering role, we don't manage individual servers; we manage **containers**. Docker allows me to define the environment as *code*, making it 100% reproducible and ready for any Cloud provider (AWS/GCP/Azure) instantly.
+1.  **Bronze (Raw Layer):** Immutable storage. I generated raw JSON files simulating ride events. The rule here: *never touch the raw files.*
+2.  **Silver (Cleaned Layer):** Data Transformation. I used Pandas to:
+    * Flatten nested JSON structures.
+    * Enforce data types (converting strings to floats for `distance` and `fare`).
+    * Add audit columns (`processed_at`) for traceability.
+3.  **Gold (Curated Layer):** The Data Warehouse. Structured SQL tables in PostgreSQL, optimized for business logic and reporting.
 
----
-
-## 🛠 Troubleshooting & Technical Milestones
-
-### May 7, 2026: Docker Image Resolution
-**Problem:** `Error response from daemon: failed to resolve reference "docker.io/library/postgres:15-alphine"`.
-**Action:** Identified a spelling error in the image tag (`alphine` vs `alpine`).
-**Lesson:** Precision is the price of admission in DevOps. Corrected the `docker-compose.yml` to use the lightweight Alpine Linux build, reducing the image size by ~90% compared to a standard build.
-
-### Architectural Choice: Star Schema over Snowflake
-**Decision:** Chose a **Star Schema** for the Ride-Share analytics model.
-**Reasoning:** While the bootcamp touched on normalization, I chose a denormalized Star Schema to optimize for **Read Performance**. In modern analytics, we trade cheap storage (Disk) for faster compute (CPU), reducing join-complexity for downstream Data Analysts.
 
 ---
 
-### 🏁 Week 1 Milestone Summary
-- [x] Successfully bypassed legacy VM setup for a modern Containerized workflow.
-- [x] Built a scalable Star Schema DDL.
-- [x] Automated database initialization using Docker Volumes.
-- [x] Verified table creation via `psql` command-line tools.
+## 🛠️ Technical Hurdles & Solutions
+
+### 1. The "Ghost" in the Volume (Docker Persistence)
+* **Problem:** I updated my database password in `docker-compose.yml`, but my Python script kept getting a `FATAL: password authentication failed` error.
+* **The "Aha!" Moment:** I learned that Postgres initializes its credentials only once in a Docker Volume. Changing the YAML doesn't update an existing volume.
+* **Solution:** Used `docker-compose down -v` to wipe the volume and force a fresh initialization with the new credentials.
+
+### 2. The Port 5432 Collision
+* **Problem:** Even with the correct password, the connection was rejected.
+* **Diagnosis:** Ran `netstat -ano | findstr :5432` and discovered a local instance of Postgres (likely from a previous install) was "camping" on the port.
+* **Solution:** Implemented **Port Mapping**. I mapped the host port `5433` to the container port `5432`, creating a private lane for this project.
+
+### 3. Data Integrity & Schema Enforcement
+* **Problem:** SQL databases are "Strongly Typed," meaning you can't put a string into a float column.
+* **Solution:** I used Pandas `.astype(float)` during the Silver transition. This ensures that the data is "Gold-ready" before it even hits the database door.
+
+---
+
+## 🚀 Key Commands Used
+| Goal | Command |
+| :--- | :--- |
+| **Reset Environment** | `docker-compose down -v` |
+| **Check Port Usage** | `netstat -ano \| findstr :5432` |
+| **Verify SQL Data** | `docker exec -it de_journal_db psql -U engineer -d ride_share_warehouse -p 5432` |
+
+## ✅ Result
+The pipeline successfully processes JSON files and loads them into a relational table. I can now run complex SQL queries on data that started as unstructured text.

@@ -1,0 +1,18 @@
+{
+    "event_id": "evt_4265904948",
+    "ride_details": {
+        "id": 5455,
+        "user": "User_8",
+        "driver_info": {
+            "name": "Driver_9",
+            "rating": 3.766668760245346
+        },
+        "distance_miles": "11.69"
+    },
+    "locations": {
+        "pickup": "Train Station",
+        "dropoff": "Train Station"
+    },
+    "timestamp": "2026-05-07T05:24:47.940748",
+    "fare": 47.19
+}
